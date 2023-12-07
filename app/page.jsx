@@ -12,11 +12,13 @@ import {
   Center,
   Float,
   Effects,
+  useGLTF
 } from '@react-three/drei';
 import { UnrealBloomPass } from 'three/examples/jsm/postprocessing/UnrealBloomPass';
 import { GlitchPass } from 'three/examples/jsm/postprocessing/GlitchPass';
+import { RGBShiftShader } from 'three/examples/jsm/shaders/RGBShiftShader';
 import { useControls } from 'leva';
-extend({ GlitchPass, UnrealBloomPass });
+extend({ GlitchPass, UnrealBloomPass,RGBShiftShader });
 
 
 const Logo = dynamic(() => import('@/components/canvas/Examples').then((mod) => mod.Logo), { ssr: false })
@@ -38,6 +40,26 @@ const View = dynamic(() => import('@/components/canvas/View').then((mod) => mod.
   ),
 })
 const Common = dynamic(() => import('@/components/canvas/View').then((mod) => mod.Common), { ssr: false })
+
+// function Model({setLoaded}) {
+//   const {camera, size:{width,height}} = useThree()
+//   const gltf = useGLTF('/david_head/scene.gltf')
+//   // const davidRef = useRef(gltf.scene)
+//   // useFrame((_, delta) => {
+//   //   //davidRef.current.rotation.x += 1 * delta
+//   //   davidRef.current.rotation.y += 0.5 * delta
+//   // })
+//   //NOTE dynamic zoom which we wont currently support
+//   // const box = new THREE.Box3().setFromObject(gltf.scene);
+//   // const boxSize = box.getSize(new THREE.Vector3()).length();
+//   // const boxCenter = box.getCenter(new THREE.Vector3());
+//   // camera.zoom = 
+//   //   width/ (1.5*(box.max.x - box.min.x));
+//   camera.zoom = width/ (1.*(10));     
+//   return <primitive object={gltf.scene} scale={.1} position={[5,-18,-8]} color={new THREE.Color("black")}>   
+//   </primitive>
+// }
+
 function Cube(props) {
   // This reference will give us direct access to the mesh
   const meshRef = useRef();
@@ -66,7 +88,7 @@ function Cube(props) {
     attenuationDistance: { value: 0.5, min: 0, max: 10, step: 0.01 },
     attenuationColor: '#fff5f5',
     color: '#c4c4c4',
-    bg: '#3a4124',
+    bg: '#72653e',
   });
   return (
     <mesh
@@ -135,6 +157,18 @@ function TextData({
     </Float>
   );
 }
+
+function Light(){
+  const { width, height } = useThree((state) => state.viewport);
+  return (
+    <>
+    <ambientLight />
+    <group>
+    <pointLight position={[1,1,1]}  />
+    </group>
+    </>
+  )
+}
 export default function Page() {
   return (
     <>
@@ -149,10 +183,11 @@ export default function Page() {
             <unrealBloomPass
               // @ts-ignore
               attachArray="passes"
+              //args={[undefined, 1., .7, 0.12]}
             />
+           
           </Effects>
-          <ambientLight />
-          <pointLight position={[1, 1, 1]} />
+        <Light />
           <Cube position={[0, 0, -4]} />
           if(data?.currentHitpoints != null && data.totalHitpoints != null)
           {

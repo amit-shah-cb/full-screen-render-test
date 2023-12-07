@@ -20,6 +20,7 @@
     "@ducanh2912/next-pwa": "^9.4.0",
     "@react-three/drei": "^9.80.2",
     "@react-three/fiber": "^8.13.6",
+    "date-fns": "^2.30.0",
     "glsl-random": "^0.0.5",
     "leva": "^0.9.35",
     "next": "^13.4.13",
