@@ -1,7 +1,23 @@
 'use client'
 
+import * as THREE from 'three'
 import dynamic from 'next/dynamic'
-import { Suspense } from 'react'
+import { Suspense,useRef,useState } from 'react'
+import { Canvas, useThree, extend } from '@react-three/fiber';
+import {
+  Text3D,
+  OrbitControls,
+  MeshTransmissionMaterial,
+  OrthographicCamera,
+  Center,
+  Float,
+  Effects,
+} from '@react-three/drei';
+import { UnrealBloomPass } from 'three/examples/jsm/postprocessing/UnrealBloomPass';
+import { GlitchPass } from 'three/examples/jsm/postprocessing/GlitchPass';
+import { useControls } from 'leva';
+extend({ GlitchPass, UnrealBloomPass });
+
 
 const Logo = dynamic(() => import('@/components/canvas/Examples').then((mod) => mod.Logo), { ssr: false })
 const Dog = dynamic(() => import('@/components/canvas/Examples').then((mod) => mod.Dog), { ssr: false })
@@ -22,60 +38,165 @@ const View = dynamic(() => import('@/components/canvas/View').then((mod) => mod.
   ),
 })
 const Common = dynamic(() => import('@/components/canvas/View').then((mod) => mod.Common), { ssr: false })
+function Cube(props) {
+  // This reference will give us direct access to the mesh
+  const meshRef = useRef();
+  // Set up state for the hovered and active state
+  const [hovered, setHover] = useState(false);
+  const [active, setActive] = useState(false);
+  // Subscribe this component to the render-loop, rotate the mesh every frame
+  //useFrame((state, delta) => (meshRef.current.rotation.x += delta));
+  // Return view, these are regular three.js elements expressed in JSX
+  const config = useControls({
+    meshPhysicalMaterial: false,
+    transmissionSampler: false,
+    backside: false,
+    samples: { value: 10, min: 1, max: 32, step: 1 },
+    resolution: { value: 2048, min: 256, max: 2048, step: 256 },
+    transmission: { value: 1, min: 0, max: 1 },
+    roughness: { value: 0.07, min: 0, max: 1, step: 0.01 },
+    thickness: { value: 3.5, min: 0, max: 10, step: 0.01 },
+    ior: { value: 1.5, min: 1, max: 5, step: 0.01 },
+    chromaticAberration: { value: 0.16, min: 0, max: 1 },
+    anisotropy: { value: 0.1, min: 0, max: 1, step: 0.01 },
+    distortion: { value: 0.0, min: 0, max: 1, step: 0.01 },
+    distortionScale: { value: 0.3, min: 0.01, max: 1, step: 0.01 },
+    temporalDistortion: { value: 0.5, min: 0, max: 1, step: 0.01 },
+    clearcoat: { value: 1, min: 0, max: 1 },
+    attenuationDistance: { value: 0.5, min: 0, max: 10, step: 0.01 },
+    attenuationColor: '#fff5f5',
+    color: '#c4c4c4',
+    bg: '#3a4124',
+  });
+  return (
+    <mesh
+      {...props}
+      ref={meshRef}
+      scale={active ? 1.5 : 1}
+      onPointerOver={(event) => setHover(true)}
+      onPointerOut={(event) => setHover(false)}
+    >
+      <boxGeometry args={[20, 40, 4]} />
+      <MeshTransmissionMaterial
+        background={new THREE.Color(config.bg)}
+        {...config}
+      />
+      {/* <meshStandardMaterial
+        color="red"
+        emissive="red"
+        emissiveIntensity={1.2}
+        toneMapped={false}
+      /> */}
+    </mesh>
+  );
+}
 
+function TextData({
+  animatedHitpoints = 100000,
+  totalHitpoints = 100000,
+  margin = 0.5,
+}) {
+  const { width, height } = useThree((state) => state.viewport);
+
+  return (
+    <Float floatIntensity={6} speed={0.9}>
+      <group position-z={-6}>
+        <Center
+          bottom
+          right
+          position={[-width / 2 + margin, height / 2 - margin, 0]}
+        >
+          <Text3D
+            lineHeight={0.75}
+            font={'/fonts/Coinbase_Sans_Bold.json'}
+            size={2}
+          >
+            {`5d 6h 4min 6sec`.split(' ').join('\n')}
+            <meshStandardMaterial
+              color={new THREE.Color('black')}
+              // emissive={new THREE.Color('white')}
+            />
+          </Text3D>
+        </Center>
+        <Center bottom position={[-margin, -height / 2 + margin + 1, 0]}>
+          <Text3D font={'/fonts/Coinbase_Sans_Bold.json'} size={0.9}>
+            {animatedHitpoints}/{totalHitpoints}
+            {/* <MeshTransmissionMaterial
+            background={new THREE.Color(config.bg)}
+            {...config}
+          /> */}
+            <meshStandardMaterial
+              color={new THREE.Color('black')}
+              // emissive={new THREE.Color('white')}
+            />
+          </Text3D>
+        </Center>
+      </group>
+    </Float>
+  );
+}
 export default function Page() {
   return (
     <>
-      <div className='mx-auto flex w-full flex-col flex-wrap items-center md:flex-row  lg:w-4/5'>
+      <div style={{width:"100%",height:"100vh"}}>
         {/* jumbo */}
-        <div className='flex w-full flex-col items-start justify-center p-12 text-center md:w-2/5 md:text-left'>
-          <p className='w-full uppercase'>Next + React Three Fiber</p>
-          <h1 className='my-4 text-5xl font-bold leading-tight'>Next 3D Starter</h1>
-          <p className='mb-8 text-2xl leading-normal'>A minimalist starter for React, React-three-fiber and Threejs.</p>
-        </div>
+        <Canvas>
+          <Effects>
+            <glitchPass
+              // @ts-ignore
+              attachArray="passes"
+            />
+            <unrealBloomPass
+              // @ts-ignore
+              attachArray="passes"
+            />
+          </Effects>
+          <ambientLight />
+          <pointLight position={[1, 1, 1]} />
+          <Cube position={[0, 0, -4]} />
+          if(data?.currentHitpoints != null && data.totalHitpoints != null)
+          {
+            <TextData
+              animatedHitpoints={10000}
+              totalHitpoints={1000000}
+            />
+          }
+          {/* <Suspense fallback={null}>
+            <Model />
+          </Suspense> */}
+          <OrbitControls />
+          <OrthographicCamera
+            makeDefault
+            zoom={100}
+            near={1}
+            far={20}
+            position={[0, 0, 10]}
+          />
+          {/* <Effects>
+              <Glitch />
+              <ChromaticAberration
+                // @ts-expect-error: Let's ignore a compile error
+                offset={[0.005, 0.002]} // color offset
+              />
 
-        <div className='w-full text-center md:w-3/5'>
-          <View className='flex h-96 w-full flex-col items-center justify-center'>
-            <Suspense fallback={null}>
-              <Logo route='/blob' scale={0.6} position={[0, 0, 0]} />
-              <Common />
-            </Suspense>
-          </View>
-        </div>
+              <Bloom
+                luminanceThreshold={0.1}
+                luminanceSmoothing={0.9}
+                intensity={0.8}
+              />
+            </Effects> */}
+        </Canvas>
+       
       </div>
 
       <div className='mx-auto flex w-full flex-col flex-wrap items-center p-12 md:flex-row  lg:w-4/5'>
         {/* first row */}
-        <div className='relative h-48 w-full py-6 sm:w-1/2 md:my-12 md:mb-40'>
-          <h2 className='mb-3 text-3xl font-bold leading-none text-gray-800'>Events are propagated</h2>
-          <p className='mb-8 text-gray-600'>Drag, scroll, pinch, and rotate the canvas to explore the 3D scene.</p>
-        </div>
+        
         <div className='relative my-12 h-48 w-full py-6 sm:w-1/2 md:mb-40'>
-          <View orbit className='relative h-full  sm:h-48 sm:w-full'>
-            <Suspense fallback={null}>
-              <Dog scale={2} position={[0, -1.6, 0]} rotation={[0.0, -0.3, 0]} />
-              <Common color={'lightpink'} />
-            </Suspense>
-          </View>
+         
         </div>
-        {/* second row */}
-        <div className='relative my-12 h-48 w-full py-6 sm:w-1/2 md:mb-40'>
-          <View orbit className='relative h-full animate-bounce sm:h-48 sm:w-full'>
-            <Suspense fallback={null}>
-              <Duck route='/blob' scale={2} position={[0, -1.6, 0]} />
-              <Common color={'lightblue'} />
-            </Suspense>
-          </View>
-        </div>
-        <div className='w-full p-6 sm:w-1/2'>
-          <h2 className='mb-3 text-3xl font-bold leading-none text-gray-800'>Dom and 3D are synchronized</h2>
-          <p className='mb-8 text-gray-600'>
-            3D Divs are renderer through the View component. It uses gl.scissor to cut the viewport into segments. You
-            tie a view to a tracking div which then controls the position and bounds of the viewport. This allows you to
-            have multiple views with a single, performant canvas. These views will follow their tracking elements,
-            scroll along, resize, etc.
-          </p>
-        </div>
+
+ 
       </div>
     </>
   )
