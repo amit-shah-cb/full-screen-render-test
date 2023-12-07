@@ -18,6 +18,8 @@ import { UnrealBloomPass } from 'three/examples/jsm/postprocessing/UnrealBloomPa
 import { GlitchPass } from 'three/examples/jsm/postprocessing/GlitchPass';
 import { RGBShiftShader } from 'three/examples/jsm/shaders/RGBShiftShader';
 import { useControls } from 'leva';
+import { useSpring, animated } from '@react-spring/three'
+
 extend({ GlitchPass, UnrealBloomPass,RGBShiftShader });
 
 
@@ -89,6 +91,7 @@ function Cube(props) {
     attenuationColor: '#fff5f5',
     color: '#c4c4c4',
     bg: '#72653e',
+    rotate:{value: 0, min:0, max:Math.PI*2, step:0.01}
   });
   return (
     <mesh
@@ -97,8 +100,9 @@ function Cube(props) {
       scale={active ? 1.5 : 1}
       onPointerOver={(event) => setHover(true)}
       onPointerOut={(event) => setHover(false)}
+     
     >
-      <boxGeometry args={[20, 40, 4]} />
+      <boxGeometry args={[20, 40, 4]}/>
       <MeshTransmissionMaterial
         background={new THREE.Color(config.bg)}
         {...config}
@@ -137,6 +141,8 @@ function TextData({
             <meshStandardMaterial
               color={new THREE.Color('black')}
               // emissive={new THREE.Color('white')}
+              // emissiveIntensity={10.5}
+              // emissive={new THREE.Color('white')}
             />
           </Text3D>
         </Center>
@@ -164,18 +170,28 @@ function Light(){
     <>
     <ambientLight />
     <group>
-    <pointLight position={[1,1,1]}  />
+      <pointLight position={[1,1,1]} color={new THREE.Color('#695828')}   />
+      <pointLight position={[2,4,1]} floatIntensity power={.05}  />
+      
     </group>
     </>
   )
 }
 export default function Page() {
+  const { spring } = useSpring({
+    spring: 1,
+    config: { mass: 5, tension: 400, friction: 50, precision: 0.0001 },
+  });
+  spring.to([0, 1], [0, Math.PI]);
+
+  
   return (
     <>
       <div style={{width:"100%",height:"100vh"}}>
         {/* jumbo */}
         <Canvas>
           <Effects>
+            <shaderPass attachArray="passes" args={[RGBShiftShader]}  material-uniforms-angle-value={0.001}  material-uniforms-amount-value={0.009} />
             <glitchPass
               // @ts-ignore
               attachArray="passes"
@@ -199,6 +215,7 @@ export default function Page() {
           {/* <Suspense fallback={null}>
             <Model />
           </Suspense> */}
+          
           <OrbitControls />
           <OrthographicCamera
             makeDefault
